@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Solar System | 互動式太陽系</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Three.js Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Control Panel -->
+    <div id="control-panel">
+        <div class="panel-header">
+            <span class="panel-icon">🪐</span>
+            <span class="panel-title">Solar System</span>
+        </div>
+        <div class="panel-body">
+            <div class="control-row">
+                <button id="btn-pause" class="ctrl-btn" title="暫停 / 繼續動畫">⏯️ 暫停</button>
+            </div>
+            <div class="control-row">
+                <label for="speed-slider" class="ctrl-label">⚡ 公轉速度</label>
+                <input type="range" id="speed-slider" min="0.1" max="5" step="0.1" value="1" class="ctrl-slider">
+                <span id="speed-value" class="ctrl-value">1×</span>
+            </div>
+            <div class="control-row">
+                <button id="btn-labels" class="ctrl-btn active" title="顯示 / 隱藏行星名稱">🏷️ 標籤</button>
+            </div>
+            <div class="control-row">
+                <button id="btn-topview" class="ctrl-btn" title="俯視視角">🔝 俯視</button>
+                <button id="btn-reset" class="ctrl-btn" title="重設視角">🔄 重設</button>
+            </div>
+        </div>
+        <div class="panel-footer">
+            <span class="hint">🖱️ 拖曳旋轉 | 🔍 滾輪縮放</span>
+        </div>
+    </div>
+
+    <!-- Info Tooltip -->
+    <div id="info-tooltip" class="hidden"></div>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <!-- Main Application -->
+    <script type="module" src="main.js"></script>
+</body>
+</html>
