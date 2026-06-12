@@ -71,30 +71,36 @@ const planetDefs = [
     { name: 'Pluto', r: 0.3, orb: 65, sp: 0.25, rot: 0.003, inc: 17.1, draw(ctx, w, h) { ctx.fillStyle = '#e0d5c8'; ctx.fillRect(0, 0, w, h); for (let i = 0; i < 50; i++) { const cx = Math.random() * w, cy = Math.random() * h; ctx.fillStyle = 'rgba(200,185,170,0.45)'; ctx.beginPath(); ctx.arc(cx, cy, 2 + Math.random() * 6, 0, Math.PI * 2); ctx.fill(); } const hx = w * 0.5, hy = h * 0.45; ctx.fillStyle = 'rgba(240,230,215,0.6)'; ctx.beginPath(); ctx.moveTo(hx, hy + 18); ctx.bezierCurveTo(hx - 22, hy - 2, hx - 30, hy - 22, hx, hy - 5); ctx.bezierCurveTo(hx + 30, hy - 22, hx + 22, hy - 2, hx, hy + 18); ctx.fill(); } },
 ];
 
-// ── BUILD PLANETS WITH INCLINED ORBIT PIVOTS ──
-const planets = [], labels = [], orbitPivots = [];
+// ── BUILD PLANETS (no pivots — direct tilted orbits) ──
+const planets = [], labels = [], orbitLines = [];
 planetDefs.forEach((def, idx) => {
+    const incRad = def.inc * Math.PI / 180;
     const tex = mkTex(512, 256, def.draw);
     const stdMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.75, metalness: 0.05 });
     const basicMat = new THREE.MeshBasicMaterial({ map: tex });
     const geom = new THREE.SphereGeometry(def.r, 48, 48);
     const mesh = new THREE.Mesh(geom, state.realisticLighting ? stdMat : basicMat);
     mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = def.name;
-    mesh.userData = { orbR: def.orb, sp: def.sp, rotSp: def.rot, ang: Math.random() * Math.PI * 2, name: def.name, stdMat, basicMat };
+    mesh.userData = { orbR: def.orb, sp: def.sp, rotSp: def.rot, incRad, ang: Math.random() * Math.PI * 2, name: def.name, stdMat, basicMat };
+    scene.add(mesh);
     planetMeshes.push(mesh);
 
-    // ★ ORBIT PIVOT — tilts the entire orbital plane
-    const pivot = new THREE.Object3D();
-    pivot.rotation.x = THREE.MathUtils.degToRad(def.inc); // tilt around X axis
-    scene.add(pivot);
-    orbitPivots.push(pivot);
-
-    // Orbit ring — child of pivot so it tilts with the plane
-    const pts = []; for (let i = 0; i <= 256; i++) { const a = (i / 256) * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a) * def.orb, 0, Math.sin(a) * def.orb)); }
-    pivot.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: orbitColors[idx], transparent: true, opacity: 0.55 })));
-
-    // Planet mesh — also child of pivot so it stays on the tilted plane
-    pivot.add(mesh);
+    // ★ TILTED orbit line — directly computed in world space
+    const pts = [];
+    for (let i = 0; i <= 256; i++) {
+        const a = (i / 256) * Math.PI * 2;
+        pts.push(new THREE.Vector3(
+            Math.cos(a) * def.orb,
+            Math.sin(a) * def.orb * Math.sin(incRad),
+            Math.sin(a) * def.orb * Math.cos(incRad)
+        ));
+    }
+    const orbitLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({ color: orbitColors[idx], transparent: true, opacity: 0.55 })
+    );
+    scene.add(orbitLine);
+    orbitLines.push(orbitLine);
 
     // Saturn rings
     if (def.hasRings) {
@@ -158,14 +164,13 @@ function animate() {
     const dt = Math.min(clock.getDelta(), 0.1), edt = state.paused ? 0 : dt * state.speed;
     sun.rotation.y += edt * 0.1; g1.rotation.y += edt * 0.03; g2.rotation.y -= edt * 0.02; g3.rotation.y += edt * 0.015;
 
-    // ★ Planets now orbit within their tilted pivot groups
+    // ★ Planets orbit on tilted planes (direct world-space calc)
     planets.forEach((p, idx) => {
         const u = p.userData;
         u.ang += edt * u.sp * 0.5;
-        // Position the planet within its pivot's local XZ plane
         p.position.x = Math.cos(u.ang) * u.orbR;
-        p.position.z = Math.sin(u.ang) * u.orbR;
-        p.position.y = 0;
+        p.position.y = Math.sin(u.ang) * u.orbR * Math.sin(u.incRad);
+        p.position.z = Math.sin(u.ang) * u.orbR * Math.cos(u.incRad);
         p.rotation.y += edt * u.rotSp;
         p.children.forEach(c => { if (c.userData && c.userData.isLabel) c.visible = state.showLabels; });
     });
