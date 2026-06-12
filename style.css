@@ -96,6 +96,15 @@ body {
     min-width: 60px;
 }
 
+.panel-section-title {
+    font-size: 10px;
+    color: #667799;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding-top: 6px;
+    padding-bottom: 2px;
+}
+
 .ctrl-btn {
     flex: 1;
     min-width: 70px;
